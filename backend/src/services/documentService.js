@@ -1,7 +1,17 @@
 const { randomUUID } = require('node:crypto');
 
+function toPublicDocument(document) {
+  return {
+    id: document.id,
+    originalName: document.originalName,
+    size: document.size,
+    uploadedAt: document.uploadedAt,
+    owner: document.owner,
+  };
+}
+
 class DocumentService {
-  constructor(documentRepository, owner = process.env.DMS_OWNER || 'default') {
+  constructor(documentRepository, owner) {
     this.documentRepository = documentRepository;
     this.owner = owner;
   }
@@ -18,14 +28,17 @@ class DocumentService {
 
     this.documentRepository.save(document);
 
-    return this.toPublicDocument(document);
+    return toPublicDocument(document);
   }
 
   listDocuments() {
-    return this.documentRepository.list().sort((first, second) => {
-      const dateOrder = second.uploadedAt.localeCompare(first.uploadedAt);
-      return dateOrder || first.id.localeCompare(second.id);
-    });
+    return this.documentRepository
+      .list()
+      .sort((first, second) => {
+        const dateOrder = second.uploadedAt.localeCompare(first.uploadedAt);
+        return dateOrder || first.id.localeCompare(second.id);
+      })
+      .map(toPublicDocument);
   }
 
   getDownload(id) {
@@ -36,23 +49,13 @@ class DocumentService {
     }
 
     return {
-      document: this.toPublicDocument(document),
+      document: toPublicDocument(document),
       filePath: this.documentRepository.getFilePath(document.storageName),
     };
   }
 
   removeStoredFile(storageName) {
     return this.documentRepository.removeStoredFile(storageName);
-  }
-
-  toPublicDocument(document) {
-    return {
-      id: document.id,
-      originalName: document.originalName,
-      size: document.size,
-      uploadedAt: document.uploadedAt,
-      owner: document.owner,
-    };
   }
 }
 

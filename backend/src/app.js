@@ -20,7 +20,10 @@ const createDocumentRoutes = require('./routes/documentRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const documentRepository = new DocumentRepository();
-const documentService = new DocumentService(documentRepository);
+const documentService = new DocumentService(
+  documentRepository,
+  process.env.DMS_OWNER || 'default',
+);
 const documentController = createDocumentController(documentService);
 
 app.use(express.json());

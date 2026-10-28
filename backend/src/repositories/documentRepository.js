@@ -12,13 +12,7 @@ class DocumentRepository {
   }
 
   list() {
-    return Array.from(this.documents.values(), (document) => ({
-      id: document.id,
-      originalName: document.originalName,
-      size: document.size,
-      uploadedAt: document.uploadedAt,
-      owner: document.owner,
-    }));
+    return Array.from(this.documents.values());
   }
 
   findById(id) {
