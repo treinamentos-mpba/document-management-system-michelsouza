@@ -11,16 +11,49 @@
 // usando multer com diskStorage. Não utilize provedores externos.
 
 const express = require('express');
+const multer = require('multer');
+const DocumentRepository = require('./repositories/documentRepository');
+const DocumentService = require('./services/documentService');
+const createDocumentController = require('./controllers/documentController');
+const createDocumentRoutes = require('./routes/documentRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const documentRepository = new DocumentRepository();
+const documentService = new DocumentService(documentRepository);
+const documentController = createDocumentController(documentService);
 
 app.use(express.json());
+app.use(createDocumentRoutes(documentController, documentRepository.storageDirectory));
 
-// Endpoint de verificação de saúde. As demais rotas (/upload, /documents,
-// /documents/:id/download) serão implementadas durante o Passo 2.
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  if (error instanceof multer.MulterError) {
+    const fileTooLarge = error.code === 'LIMIT_FILE_SIZE';
+
+    return res.status(fileTooLarge ? 413 : 400).json({
+      error: {
+        code: fileTooLarge ? 'FILE_TOO_LARGE' : 'INVALID_UPLOAD',
+        message: fileTooLarge
+          ? 'O arquivo excede o limite de 10 MiB.'
+          : 'O arquivo enviado é inválido.',
+      },
+    });
+  }
+
+  return res.status(500).json({
+    error: {
+      code: 'STORAGE_ERROR',
+      message: 'Não foi possível processar a operação do documento.',
+    },
+  });
 });
 
 if (require.main === module) {
